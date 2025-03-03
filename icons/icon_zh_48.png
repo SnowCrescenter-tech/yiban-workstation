@@ -1,0 +1,5 @@
+# 在项目根目录创建一个icons文件夹并添加空的icon文件
+# 下面是命令行代码：
+
+# mkdir -p icons
+# touch icons/icon_zh_48.png

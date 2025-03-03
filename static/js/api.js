@@ -1,4 +1,5 @@
-import axios from 'https://cdn.jsdelivr.net/npm/axios@1.3.5/+esm';
+// 由于直接使用CDN加载的axios，这里不需要再导入
+// import axios from 'https://cdn.jsdelivr.net/npm/axios@1.3.5/+esm';
 import { store } from './store.js';
 
 // 创建axios实例
@@ -210,129 +211,150 @@ const mockDatabase = {
 // 模拟延迟
 const delay = (ms = 300) => new Promise(resolve => setTimeout(resolve, ms));
 
-export const api = {
-  // 用户认证
-  async login(credentials) {
-    await delay();
-    const user = mockDatabase.users.find(
-      u => u.username === credentials.username && u.password === credentials.password
-    );
-    
-    if (!user) {
-      throw new Error('用户名或密码错误');
-    }
-    
-    const now = new Date();
-    user.lastLogin = now.toLocaleString();
-    
-    // 生成模拟token
-    const token = btoa(JSON.stringify({ userId: user.id, timestamp: now.getTime() }));
-    
-    // 在实际应用中，这些信息应该由服务器返回
-    return {
-      token,
-      data: { ...user, password: undefined } // 不返回密码
-    };
-  },
+/**
+ * API请求封装
+ */
+
+// API基础地址
+const BASE_URL = '';
+
+// API接口路径
+const API = {
+  LOGIN: '/api/login',
+  USER: '/api/user',
+  TASKS: '/api/tasks',
+  NOTIFICATIONS: '/api/notifications',
+  DEPARTMENTS: '/api/departments',
+  UPLOAD: '/api/upload'
+};
+
+// 通用请求函数
+const request = async (url, options = {}) => {
+  // 添加token
+  const token = localStorage.getItem('token');
+  const headers = {
+    'Content-Type': 'application/json',
+    ...options.headers
+  };
   
-  async getCurrentUser() {
-    await delay();
-    const token = localStorage.getItem('token');
-    if (!token) return null;
-    
-    try {
-      const { userId } = JSON.parse(atob(token));
-      const user = mockDatabase.users.find(u => u.id === userId);
-      if (!user) throw new Error('用户不存在');
-      
-      return { ...user, password: undefined };
-    } catch {
-      throw new Error('无效的认证信息');
-    }
-  },
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
   
-  async changePassword(data) {
-    await delay();
-    const token = localStorage.getItem('token');
-    if (!token) throw new Error('未登录');
+  const config = {
+    ...options,
+    headers
+  };
+  
+  try {
+    const response = await fetch(BASE_URL + url, config);
     
-    try {
-      const { userId } = JSON.parse(atob(token));
-      const userIndex = mockDatabase.users.findIndex(u => u.id === userId);
+    // 判断请求是否成功
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
       
-      if (userIndex === -1) throw new Error('用户不存在');
-      if (mockDatabase.users[userIndex].password !== data.currentPassword) {
-        throw new Error('当前密码错误');
+      // 处理401未授权错误，清除登录状态
+      if (response.status === 401) {
+        localStorage.removeItem('token');
       }
       
-      // 更新密码
-      mockDatabase.users[userIndex].password = data.newPassword;
-      return { success: true };
-    } catch (error) {
-      throw error;
+      throw {
+        status: response.status,
+        message: errorData.error || response.statusText,
+        data: errorData
+      };
     }
+    
+    // 返回JSON数据
+    const data = await response.json();
+    return { data, status: response.status };
+  } catch (error) {
+    console.error('API请求错误:', error);
+    throw error;
+  }
+};
+
+// API方法封装
+export const api = {
+  // 用户登录
+  login: async (credentials) => {
+    const { data } = await request(API.LOGIN, {
+      method: 'POST',
+      body: JSON.stringify(credentials)
+    });
+    return data;
   },
   
-  // 用户资料
-  async updateProfile(profileData) {
-    await delay();
-    const token = localStorage.getItem('token');
-    if (!token) throw new Error('未登录');
-    
-    try {
-      const { userId } = JSON.parse(atob(token));
-      const userIndex = mockDatabase.users.findIndex(u => u.id === userId);
-      
-      if (userIndex === -1) throw new Error('用户不存在');
-      
-      // 只允许更新特定字段
-      const allowedFields = ['name', 'email', 'phone', 'skills'];
-      allowedFields.forEach(field => {
-        if (profileData[field] !== undefined) {
-          mockDatabase.users[userIndex][field] = profileData[field];
-        }
-      });
-      
-      return { ...mockDatabase.users[userIndex], password: undefined };
-    } catch (error) {
-      throw error;
-    }
+  // 获取当前用户信息
+  getCurrentUser: async () => {
+    const { data } = await request(API.USER);
+    return data;
   },
   
-  // 任务相关
-  async createTask(taskData) {
-    await delay();
-    // 验证用户权限
-    const currentUser = await this.getCurrentUser();
-    if (!currentUser || !['超级管理员', '管理员', '部门负责人'].includes(currentUser.role)) {
-      throw new Error('没有权限创建任务');
-    }
+  // 更新用户信息
+  updateUser: async (userData) => {
+    const { data } = await request(`${API.USER}`, {
+      method: 'PUT',
+      body: JSON.stringify(userData)
+    });
+    return data;
+  },
+  
+  // 修改密码
+  changePassword: async (passwordData) => {
+    const { data } = await request(`${API.USER}/password`, {
+      method: 'POST',
+      body: JSON.stringify(passwordData)
+    });
+    return data;
+  },
+  
+  // 获取通知
+  getNotifications: async () => {
+    const { data } = await request(API.NOTIFICATIONS);
+    return { data };
+  },
+  
+  // 获取用户任务
+  getUserTasks: async () => {
+    const { data } = await request(API.TASKS);
+    return { data };
+  },
+  
+  // 获取所有任务
+  getAllTasks: async (params = {}) => {
+    // 将参数转换为查询字符串
+    const queryParams = new URLSearchParams();
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        queryParams.append(key, value);
+      }
+    });
     
-    // 创建新任务
-    const newTask = {
-      id: mockDatabase.tasks.length + 1,
-      title: taskData.title,
-      description: taskData.description,
-      status: '未开始',
-      isUrgent: taskData.isUrgent,
-      deadline: new Date(taskData.deadline).toLocaleString(),
-      creator: currentUser.name,
-      department: mockDatabase.departments.find(d => d.id === parseInt(taskData.department))?.name || '未知部门',
-      members: taskData.members.map(id => {
-        const user = mockDatabase.users.find(u => u.id === parseInt(id));
-        return { id: user.id, name: user.name };
-      }),
-      attachments: taskData.attachments.map(file => ({
-        name: file.name,
-        url: '#',
-        size: file.size || Math.random() * 1024 * 1024 * 10
-      })),
-      createdAt: new Date().toLocaleString(),
-      start: new Date().getDate(),
-      duration: 10
-    };
+    const queryString = queryParams.toString();
+    const url = queryString ? `${API.TASKS}?${queryString}` : API.TASKS;
     
-    mockDatabase.tasks.push(newTask);
+    const { data } = await request(url);
+    return { data };
+  },
+  
+  // 获取任务详情
+  getTaskDetail: async (taskId) => {
+    const { data } = await request(`${API.TASKS}/${taskId}`);
+    return data;
+  },
+  
+  // 更新任务状态
+  updateTaskStatus: async (taskId, status) => {
+    const { data } = await request(`${API.TASKS}/${taskId}/status`, {
+      method: 'POST',
+      body: JSON.stringify({ status })
+    });
+    return data;
+  },
+  
+  // 获取部门列表
+  getDepartments: async () => {
     
     // 为相关成员创建通知
     newTask.members.forEach(member => {

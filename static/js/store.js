@@ -1,100 +1,91 @@
-// 简单状态管理模块，用于共享全局数据
+/**
+ * 状态管理模块
+ * 提供全局状态管理功能
+ */
+
+// 创建简单的状态存储
 export const store = {
   state: {
     user: null,
-    tasks: [],
+    isLoggedIn: false,
+    darkMode: localStorage.getItem('darkMode') === 'true',
     notifications: [],
-    departments: [],
-    members: []
+    unreadCount: 0,
+    systemSettings: {}
   },
   
-  // 用户相关方法
+  // 设置用户信息
   setUser(user) {
     this.state.user = user;
+    this.state.isLoggedIn = !!user;
+    
+    if (this.listeners.user.length) {
+      this.listeners.user.forEach(listener => listener(user));
+    }
   },
   
+  // 清除用户信息
   clearUser() {
     this.state.user = null;
-  },
-  
-  // 任务相关方法
-  setTasks(tasks) {
-    this.state.tasks = tasks;
-  },
-  
-  addTask(task) {
-    this.state.tasks.push(task);
-  },
-  
-  updateTask(taskId, updates) {
-    const index = this.state.tasks.findIndex(task => task.id === taskId);
-    if (index !== -1) {
-      this.state.tasks[index] = { ...this.state.tasks[index], ...updates };
+    this.state.isLoggedIn = false;
+    
+    if (this.listeners.user.length) {
+      this.listeners.user.forEach(listener => listener(null));
     }
   },
   
-  removeTask(taskId) {
-    this.state.tasks = this.state.tasks.filter(task => task.id !== taskId);
-  },
-  
-  // 通知相关方法
+  // 设置通知数据
   setNotifications(notifications) {
     this.state.notifications = notifications;
-  },
-  
-  addNotification(notification) {
-    this.state.notifications.push(notification);
-  },
-  
-  clearNotifications() {
-    this.state.notifications = [];
-  },
-  
-  // 部门相关方法
-  setDepartments(departments) {
-    this.state.departments = departments;
-  },
-  
-  // 成员相关方法
-  setMembers(members) {
-    this.state.members = members;
-  },
-
-  // 管理员专属方法
-  addUser(user) {
-    // 仅适用于管理员，添加新用户
-    if (this.state.user && ['超级管理员', '管理员'].includes(this.state.user.role)) {
-      // 这里只是前端模拟，实际应该调用API
-      console.log('添加新用户:', user);
-      return true;
+    this.state.unreadCount = notifications.length;
+    
+    if (this.listeners.notifications.length) {
+      this.listeners.notifications.forEach(listener => listener(notifications));
     }
-    return false;
   },
   
-  getDashboardStats() {
-    // 获取统计数据
-    if (!this.state.user) return null;
+  // 设置深色模式
+  setDarkMode(isDark) {
+    this.state.darkMode = isDark;
+    localStorage.setItem('darkMode', isDark);
+    document.documentElement.classList.toggle('dark', isDark);
     
-    // 计算统计数据
-    const tasksByStatus = {
-      '未开始': this.state.tasks.filter(t => t.status === '未开始').length,
-      '进行中': this.state.tasks.filter(t => t.status === '进行中').length,
-      '待验收': this.state.tasks.filter(t => t.status === '待验收').length,
-      '已完成': this.state.tasks.filter(t => t.status === '已完成').length,
-    };
+    if (this.listeners.darkMode.length) {
+      this.listeners.darkMode.forEach(listener => listener(isDark));
+    }
+  },
+  
+  // 设置系统设置
+  setSystemSettings(settings) {
+    this.state.systemSettings = settings;
     
-    const urgentTasksCount = this.state.tasks.filter(t => t.isUrgent).length;
-    const overdueTasksCount = this.state.tasks.filter(t => {
-      const deadline = new Date(t.deadline);
-      const now = new Date();
-      return deadline < now && t.status !== '已完成';
-    }).length;
+    if (this.listeners.systemSettings.length) {
+      this.listeners.systemSettings.forEach(listener => listener(settings));
+    }
+  },
+  
+  // 事件监听器
+  listeners: {
+    user: [],
+    notifications: [],
+    darkMode: [],
+    systemSettings: []
+  },
+  
+  // 添加监听器
+  subscribe(type, callback) {
+    if (!this.listeners[type]) {
+      this.listeners[type] = [];
+    }
     
-    return {
-      tasksByStatus,
-      urgentTasksCount,
-      overdueTasksCount,
-      totalTasks: this.state.tasks.length
+    this.listeners[type].push(callback);
+    return () => {
+      this.listeners[type] = this.listeners[type].filter(cb => cb !== callback);
     };
   }
 };
+
+// 初始化深色模式
+if (store.state.darkMode) {
+  document.documentElement.classList.add('dark');
+}

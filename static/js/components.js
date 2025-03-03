@@ -1,4 +1,13 @@
+import { LoginComponents } from './components-login.js';
+import { DebugComponents } from './components-debug.js';
+
 export const components = {
+  // 继承登录组件
+  ...LoginComponents,
+  
+  // 继承调试组件
+  ...DebugComponents,
+
   // 宣传主页
   LandingPage: {
     template: `
@@ -68,7 +77,7 @@ export const components = {
             <el-row :gutter="20">
               <el-col :span="8" v-for="achievement in achievements" :key="achievement.id">
                 <el-card>
-                  <img :src="achievement.image" style="width: 100%">
+                  <img :src="achievement.image" style="width: 100%" v-img-fallback>
                   <div style="padding: 14px;">
                     <h4>{{ achievement.title }}</h4>
                     <p>{{ achievement.description }}</p>
@@ -104,20 +113,24 @@ export const components = {
                 <h3>关注我们</h3>
                 <div class="qrcode-container">
                   <div>
-                    <img src="https://via.placeholder.com/150" alt="微信公众号">
+                    <div style="width: 150px; height: 150px; background-color: #f5f7fa; display: flex; align-items: center; justify-content: center;">
+                      <span style="color: #909399;">微信二维码</span>
+                    </div>
                     <p>微信公众号</p>
                   </div>
                   <div>
-                    <img src="https://via.placeholder.com/150" alt="抖音账号">
+                    <div style="width: 150px; height: 150px; background-color: #f5f7fa; display: flex; align-items: center; justify-content: center;">
+                      <span style="color: #909399;">抖音二维码</span>
+                    </div>
                     <p>抖音账号</p>
                   </div>
                 </div>
               </el-col>
               <el-col :span="12">
                 <h3>位置</h3>
-                <div style="height: 400px; background-color: #eee;">
-                  <!-- 地图组件将在这里加载 -->
-                  <div style="text-align: center; line-height: 400px;">地图加载中...</div>
+                <div style="height: 400px; background-color: #eee; display: flex; align-items: center; justify-content: center;">
+                  <!-- 替换为静态地图图像或文本提示 -->
+                  <span style="color: #909399; font-size: 16px;">校园地图</span>
                 </div>
               </el-col>
             </el-row>
@@ -131,17 +144,18 @@ export const components = {
         showContact: false,
         carouselItems: [
           {
-            image: 'https://via.placeholder.com/1200x500',
+            // 使用本地SVG替代无法访问的图片
+            image: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="1200" height="500" viewBox="0 0 1200 500"%3E%3Crect width="1200" height="500" fill="%234c86c0"/%3E%3Ctext x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-family="Arial" font-size="36" fill="%23ffffff"%3E校园文化节%3C/text%3E%3C/svg%3E',
             title: '2023校园文化节',
             description: '展示校园文化魅力，弘扬青春正能量'
           },
           {
-            image: 'https://via.placeholder.com/1200x500/333',
+            image: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="1200" height="500" viewBox="0 0 1200 500"%3E%3Crect width="1200" height="500" fill="%23409eff"/%3E%3Ctext x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-family="Arial" font-size="36" fill="%23ffffff"%3E新媒体技术培训%3C/text%3E%3C/svg%3E',
             title: '新媒体技术培训',
             description: '为校园媒体人提供专业技能培训'
           },
           {
-            image: 'https://via.placeholder.com/1200x500/555',
+            image: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="1200" height="500" viewBox="0 0 1200 500"%3E%3Crect width="1200" height="500" fill="%2367c23a"/%3E%3Ctext x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-family="Arial" font-size="36" fill="%23ffffff"%3E校园形象宣传片%3C/text%3E%3C/svg%3E',
             title: '校园形象宣传片',
             description: '全新视角展示校园风采'
           }
@@ -166,19 +180,19 @@ export const components = {
         achievements: [
           {
             id: 1,
-            image: 'https://via.placeholder.com/300x200',
+            image: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="300" height="200" viewBox="0 0 300 200"%3E%3Crect width="300" height="200" fill="%23e74c3c"/%3E%3Ctext x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-family="Arial" font-size="18" fill="%23ffffff"%3E校园宣传片《青春之声》%3C/text%3E%3C/svg%3E',
             title: '校园宣传片《青春之声》',
             description: '荣获全国高校优秀宣传作品一等奖'
           },
           {
             id: 2,
-            image: 'https://via.placeholder.com/300x200',
+            image: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="300" height="200" viewBox="0 0 300 200"%3E%3Crect width="300" height="200" fill="%233498db"/%3E%3Ctext x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-family="Arial" font-size="18" fill="%23ffffff"%3E新媒体平台矩阵%3C/text%3E%3C/svg%3E',
             title: '新媒体平台矩阵',
             description: '构建了覆盖微信、微博、抖音等全平台的宣传体系'
           },
           {
             id: 3,
-            image: 'https://via.placeholder.com/300x200',
+            image: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="300" height="200" viewBox="0 0 300 200"%3E%3Crect width="300" height="200" fill="%239b59b6"/%3E%3Ctext x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-family="Arial" font-size="18" fill="%23ffffff"%3E校园文化数字展示系统%3C/text%3E%3C/svg%3E',
             title: '校园文化数字展示系统',
             description: '运用AR/VR技术展示校园历史文化'
           }
@@ -196,7 +210,7 @@ export const components = {
       console.log('Landing page mounted');
     }
   },
-  
+
   // 登录页
   Login: {
     template: `
@@ -430,7 +444,7 @@ export const components = {
               <el-descriptions-item label="截止日期">{{ currentTask.deadline }}</el-descriptions-item>
               <el-descriptions-item label="状态">{{ currentTask.status }}</el-descriptions-item>
               <el-descriptions-item label="创建者">{{ currentTask.creator }}</el-descriptions-item>
-              <el-descriptions-item label="协作成员">{{ currentTask.members.join(', ') }}</el-descriptions-item>
+              <el-descriptions-item label="协作成员">{{ currentTask.members?.map(m => m.name).join(', ') || '无' }}</el-descriptions-item>
             </el-descriptions>
             
             <h4 style="margin-top: 20px;">任务描述</h4>
@@ -439,7 +453,7 @@ export const components = {
             </div>
             
             <h4 style="margin-top: 20px;">附件</h4>
-            <div v-if="currentTask.attachments.length === 0">无附件</div>
+            <div v-if="!currentTask.attachments || currentTask.attachments.length === 0">无附件</div>
             <ul v-else>
               <li v-for="(file, index) in currentTask.attachments" :key="index">
                 <a :href="file.url" target="_blank">{{ file.name }}</a>
@@ -520,6 +534,13 @@ export const components = {
       
       updateTask(taskId, newStatus) {
         this.$emit('updateTaskStatus', taskId, newStatus);
+        this.$message.success(`任务状态已更新为: ${newStatus}`);
+        
+        // 如果当前正在查看的任务被更新，关闭详情窗口
+        if (this.currentTask && this.currentTask.id === taskId) {
+          this.taskDetailVisible = false;
+          this.loadDashboardData(); // 重新加载数据
+        }
       },
       
       formatFileSize(bytes) {
@@ -636,7 +657,7 @@ export const components = {
             
             <el-form-item>
               <el-button type="primary" @click="submitTask" style="width: 100%;">发布任务</el-button>
-            </el-form-item>
+            </el-item>
           </el-form>
         </div>
       </div>

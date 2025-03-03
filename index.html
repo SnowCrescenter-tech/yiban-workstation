@@ -4,14 +4,73 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>新媒体中心工作网站</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/element-plus/dist/index.css">
+  <!-- 使用生产版本的 Vue 和 Element Plus -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/element-plus@2.3.8/dist/index.css">
   <link rel="stylesheet" href="./static/css/main.css">
-  <script src="https://cdn.jsdelivr.net/npm/vue@3"></script>
-  <script src="https://cdn.jsdelivr.net/npm/element-plus"></script>
+  <link rel="stylesheet" href="./static/css/login.css">
+  <!-- 添加图标支持 -->
+  <link rel="icon" href="favicon.ico" type="image/x-icon">
+  <!-- 图片加载错误处理样式 -->
+  <style>
+    .img-error-fallback {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: #f0f2f5;
+      color: #909399;
+      font-size: 14px;
+      text-align: center;
+    }
+    .carousel-image {
+      object-fit: cover;
+      width: 100%;
+      height: 100%;
+    }
+    /* 加载动画 */
+    .loading-spinner {
+      display: inline-block;
+      width: 60px;
+      height: 60px;
+      border: 4px solid rgba(0, 0, 0, 0.1);
+      border-radius: 50%;
+      border-top-color: #409EFF;
+      animation: spin 1s ease-in-out infinite;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+  <!-- 首先加载兼容性脚本 -->
+  <script src="./static/js/polyfill.js"></script>
+  <!-- 然后加载主要库 -->
+  <script src="https://cdn.jsdelivr.net/npm/vue@3.2.47/dist/vue.global.prod.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@element-plus/icons-vue"></script>
+  <script src="https://cdn.jsdelivr.net/npm/element-plus@2.3.8/dist/index.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <!-- 添加 Element Plus 图标 -->
+  <script src="https://cdn.jsdelivr.net/npm/@element-plus/icons-vue@2.1.0/dist/index.iife.min.js"></script>
 </head>
 <body>
-  <div id="app"></div>
+  <div id="app">
+    <!-- 添加加载提示，使用CSS加载动画替代外部图片 -->
+    <div style="display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh;">
+      <div class="loading-spinner"></div>
+      <p style="margin-top: 20px;">加载中，请稍候...</p>
+    </div>
+  </div>
+  
+  <script>
+    window.onload = function() {
+      // 全局暴露Vue，供main.js使用
+      window.Vue = Vue;
+      window.ElementPlus = ElementPlus;
+      
+      // 添加登录调试信息
+      console.info('系统默认超级管理员账号: admin/admin123');
+    }
+  </script>
+  <!-- 添加登录帮助工具（开发环境） -->
+  <script src="./static/js/login-helper.js" type="module"></script>
   <script src="./static/js/main.js" type="module"></script>
 </body>
 </html>

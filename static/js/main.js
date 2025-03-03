@@ -1,125 +1,257 @@
-import { createApp } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.js';
-import { components } from './components.js';
-import { store } from './store.js';
-import { api } from './api.js';
+/**
+ * 应用程序入口文件
+ */
 
+import { api } from './api.js';
+import { handleImageError, formatDate } from './utils.js';
+import { images } from './localImages.js';
+import { printLoginInfo } from './login-helper.js';
+
+// 导入组件库
+import { AdminComponents } from './admin-components.js';
+import { UserComponents } from './user-components.js';
+import { LoginComponents } from './components-login.js';
+import { LandingComponents } from './components.js';
+import { DebugComponents } from './components-debug.js';
+
+// 初始化应用
+const { createApp, ref, reactive, computed, onMounted, watch } = Vue;
 const app = createApp({
-  data() {
-    return {
-      currentView: 'LandingPage',
-      user: null,
-      loginAttempts: 0,
-      isLocked: false,
-      lockTime: null
-    };
-  },
-  computed: {
-    isLoggedIn() {
-      return this.user !== null;
-    },
-    isAdmin() {
-      return this.user && ['超级管理员', '管理员'].includes(this.user.role);
-    },
-    isDepartmentHead() {
-      return this.user && (this.user.role === '部门负责人' || this.isAdmin);
-    }
-  },
-  methods: {
-    // 导航控制
-    navigate(view) {
-      this.currentView = view;
-    },
+  setup() {
+    // 应用状态
+    const isLoading = ref(false);
+    const isLoggedIn = ref(false);
+    const loginMessage = ref('');
+    const user = ref(null);
+    const view = ref('LandingPage'); // 初始页面
+    const darkMode = ref(localStorage.getItem('darkMode') === 'true');
+    const notifications = ref([]);
+    const unreadCount = ref(0);
     
-    // 用户认证
-    async login(credentials) {
-      if (this.isLocked) {
-        const now = new Date();
-        const minutesLeft = Math.ceil((this.lockTime.getTime() + 30 * 60 * 1000 - now.getTime()) / (60 * 1000));
-        if (minutesLeft > 0) {
-          this.$message.error(`账号已锁定，请${minutesLeft}分钟后再试`);
-          return;
+    // 检查是否已登录
+    const checkLoginStatus = async () => {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+      
+      try {
+        // 获取当前用户信息
+        const currentUser = await api.getCurrentUser();
+        user.value = currentUser;
+        isLoggedIn.value = true;
+        
+        // 根据用户角色设置初始页面
+        if (user.value.role === '超级管理员' || user.value.role === '管理员') {
+          view.value = 'AdminDashboard';
+        } else {
+          view.value = 'Dashboard';
         }
-        this.isLocked = false;
-        this.loginAttempts = 0;
+        
+        // 加载通知
+        loadNotifications();
+      } catch (error) {
+        console.error('登录验证失败:', error);
+        isLoggedIn.value = false;
+        localStorage.removeItem('token');
+        view.value = 'Login';
       }
+    };
+    
+    // 处理登录
+    const handleLogin = async (credentials) => {
+      isLoading.value = true;
+      loginMessage.value = '';
       
       try {
         const response = await api.login(credentials);
-        this.user = response.data;
         localStorage.setItem('token', response.token);
-        this.navigate('Dashboard');
-        this.$message.success('登录成功');
-      } catch (error) {
-        this.loginAttempts++;
-        if (this.loginAttempts >= 3) {
-          this.isLocked = true;
-          this.lockTime = new Date();
-          this.$message.error('登录失败超过3次，账号已锁定30分钟');
+        user.value = response.data;
+        isLoggedIn.value = true;
+        isLoading.value = false;
+        
+        // 根据用户角色设置登录后的页面
+        if (user.value.role === '超级管理员' || user.value.role === '管理员') {
+          view.value = 'AdminDashboard';
         } else {
-          this.$message.error(`登录失败: ${error.message || '账号或密码错误'}`);
+          view.value = 'Dashboard';
         }
+        
+        loadNotifications();
+      } catch (error) {
+        isLoading.value = false;
+        loginMessage.value = error.message || '登录失败，请检查用户名和密码';
       }
-    },
+    };
     
-    logout() {
-      this.user = null;
+    // 处理退出登录
+    const handleLogout = () => {
       localStorage.removeItem('token');
-      this.navigate('LandingPage');
-      this.$message.success('已退出登录');
-    },
+      isLoggedIn.value = false;
+      user.value = null;
+      view.value = 'LandingPage';
+    };
     
-    // 任务管理
-    async createTask(taskData) {
+    // 切换深色模式
+    const toggleDarkMode = () => {
+      darkMode.value = !darkMode.value;
+      localStorage.setItem('darkMode', darkMode.value);
+      document.documentElement.classList.toggle('dark', darkMode.value);
+    };
+    
+    // 加载通知
+    const loadNotifications = async () => {
+      if (!isLoggedIn.value) return;
+      
       try {
-        await api.createTask(taskData);
-        this.$message.success('任务创建成功');
-        return true;
+        const result = await api.getNotifications();
+        notifications.value = result.data;
+        unreadCount.value = notifications.value.length;
       } catch (error) {
-        this.$message.error(`创建失败: ${error.message}`);
-        return false;
+        console.error('加载通知失败:', error);
       }
-    },
+    };
     
-    async updateTaskStatus(taskId, newStatus) {
-      try {
-        await api.updateTaskStatus(taskId, newStatus);
-        this.$message.success('任务状态已更新');
-        return true;
-      } catch (error) {
-        this.$message.error(`更新失败: ${error.message}`);
-        return false;
+    // 消息已读处理
+    const markAsRead = (id) => {
+      const index = notifications.value.findIndex(n => n.id === id);
+      if (index !== -1) {
+        unreadCount.value = Math.max(0, unreadCount.value - 1);
       }
-    },
+    };
     
-    // 初始化方法 - 检查登录状态
-    async checkAuth() {
-      const token = localStorage.getItem('token');
-      if (token) {
-        try {
-          const user = await api.getCurrentUser();
-          this.user = user;
-          this.navigate('Dashboard');
-        } catch (error) {
-          localStorage.removeItem('token');
-        }
+    // 导航到指定视图
+    const navigateTo = (targetView) => {
+      view.value = targetView;
+    };
+    
+    // 注册全局错误处理
+    const registerErrorHandler = () => {
+      window.addEventListener('error', (event) => {
+        console.error('捕获到全局错误:', event.error);
+        
+        // 记录错误到本地存储，方便调试
+        const errorLogs = JSON.parse(localStorage.getItem('errorLogs') || '[]');
+        errorLogs.push({
+          message: event.error?.message || '未知错误',
+          details: event.error?.stack || event.message,
+          timestamp: Date.now()
+        });
+        localStorage.setItem('errorLogs', JSON.stringify(errorLogs.slice(-20))); // 只保留最近20条
+      });
+    };
+    
+    // 生命周期钩子
+    onMounted(() => {
+      // 设置深色模式
+      document.documentElement.classList.toggle('dark', darkMode.value);
+      
+      // 检查登录状态
+      checkLoginStatus();
+      
+      // 注册错误处理
+      registerErrorHandler();
+      
+      // 在开发环境打印登录信息
+      if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        printLoginInfo();
       }
-    }
-  },
-  mounted() {
-    this.checkAuth();
-  },
-  render() {
-    return this.$h(components[this.currentView] || 'div', {
-      user: this.user,
-      onLogin: this.login,
-      onLogout: this.logout,
-      onNavigate: this.navigate,
-      onCreateTask: this.createTask,
-      onUpdateTaskStatus: this.updateTaskStatus
     });
-  }
+    
+    // 监听用户状态变化
+    watch(user, (newValue, oldValue) => {
+      if (newValue && (!oldValue || newValue.id !== oldValue.id)) {
+        console.log('用户状态已更新:', newValue.name);
+        // 可以在这里添加用户状态变化后的逻辑
+      }
+    });
+    
+    // 返回到模板使用的内容
+    return {
+      isLoading,
+      isLoggedIn,
+      loginMessage,
+      user,
+      view,
+      darkMode,
+      notifications,
+      unreadCount,
+      handleLogin,
+      handleLogout,
+      toggleDarkMode,
+      markAsRead,
+      navigateTo
+    };
+  },
+  components: {
+    // 注册所有组件
+    ...LoginComponents,
+    ...LandingComponents,
+    ...AdminComponents,
+    ...UserComponents,
+    ...DebugComponents,
+  },
+  template: `
+    <div id="app" :class="{ 'dark': darkMode }">
+      <!-- 登陆前页面 -->
+      <template v-if="!isLoggedIn">
+        <component 
+          :is="view" 
+          @navigate="navigateTo" 
+          @login="handleLogin"
+          :login-message="loginMessage"
+          :is-loading="isLoading"
+        ></component>
+      </template>
+      
+      <!-- 登录后页面 -->
+      <template v-else>
+        <div class="app-container">
+          <AppHeader 
+            :user="user" 
+            :notifications="notifications"
+            :unread-count="unreadCount"
+            @navigate="navigateTo"
+            @logout="handleLogout"
+            @toggle-theme="toggleDarkMode"
+            @mark-read="markAsRead"
+          />
+          
+          <div class="main-container">
+            <AppSidebar 
+              :user="user" 
+              :active-menu="view"
+              @navigate="navigateTo"
+              @logout="handleLogout"
+            />
+            
+            <div class="content-area">
+              <component 
+                :is="view" 
+                :user="user"
+                :notifications="notifications"
+                :unread-count="unreadCount"
+                @navigate="navigateTo"
+                @mark-read="markAsRead"
+              ></component>
+            </div>
+          </div>
+        </div>
+      </template>
+      
+      <!-- 调试信息 -->
+      <DebugInfo 
+        v-if="darkMode && isLoggedIn && user.role === '超级管理员'"
+        :user="user"
+        :current-view="view"
+      />
+    </div>
+  `
 });
 
-// 全局注册Element Plus组件
-app.use(ElementPlus);
+// 挂载应用
 app.mount('#app');
+
+// 用于开发环境调试
+if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+  window.app = app;
+  console.log('应用已挂载，可通过 window.app 访问');
+}

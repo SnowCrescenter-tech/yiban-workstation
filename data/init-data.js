@@ -1,17 +1,14 @@
+/**
+ * 系统初始化数据
+ * 包含默认用户、部门和示例任务
+ */
+
+const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
-const crypto = require('crypto');
 
-// 数据存储路径
+// 数据目录
 const DATA_DIR = path.join(__dirname);
-const UPLOADS_DIR = path.join(__dirname, '..', 'uploads');
-
-// 确保数据目录存在
-[DATA_DIR, UPLOADS_DIR].forEach(dir => {
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
-  }
-});
 
 // 数据文件路径
 const USERS_FILE = path.join(DATA_DIR, 'users.json');
@@ -24,19 +21,7 @@ function hashPassword(password) {
   return crypto.createHash('sha256').update(password).digest('hex');
 }
 
-// 写入数据函数
-function writeData(filePath, data) {
-  try {
-    fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf8');
-    console.log(`成功写入数据到: ${filePath}`);
-    return true;
-  } catch (error) {
-    console.error(`写入文件 ${filePath} 时出错:`, error);
-    return false;
-  }
-}
-
-// 初始化用户数据
+// 初始用户数据
 const initialUsers = [
   {
     id: 1,
@@ -44,7 +29,7 @@ const initialUsers = [
     password: hashPassword('admin123'),
     name: '系统管理员',
     role: '超级管理员',
-    department: 1, // 信息中心
+    department: 1, // 信息中心的ID
     email: 'admin@example.com',
     phone: '13800000000',
     skills: ['全栈开发', '系统管理', '数据分析'],
@@ -56,7 +41,7 @@ const initialUsers = [
     password: hashPassword('123456'),
     name: '张主任',
     role: '部门负责人',
-    department: 2, // 视频制作部
+    department: 2, // 视频制作部的ID
     email: 'manager1@example.com',
     phone: '13800000001',
     skills: ['视频剪辑', '导演', '摄影'],
@@ -68,39 +53,15 @@ const initialUsers = [
     password: hashPassword('123456'),
     name: '李明',
     role: '普通成员',
-    department: 2, // 视频制作部
+    department: 2, // 视频制作部的ID
     email: 'user1@example.com',
     phone: '13800000002',
     skills: ['视频剪辑', '摄影'],
     lastLogin: new Date().toISOString()
-  },
-  {
-    id: 4,
-    username: 'user2',
-    password: hashPassword('123456'),
-    name: '王红',
-    role: '普通成员',
-    department: 2, // 视频制作部
-    email: 'user2@example.com',
-    phone: '13800000003',
-    skills: ['视频特效', '后期制作'],
-    lastLogin: null
-  },
-  {
-    id: 5,
-    username: 'news1',
-    password: hashPassword('123456'),
-    name: '赵强',
-    role: '普通成员',
-    department: 3, // 新闻采编部
-    email: 'news1@example.com',
-    phone: '13800000004',
-    skills: ['新闻写作', '摄影'],
-    lastLogin: null
   }
 ];
 
-// 初始化部门数据
+// 初始部门数据
 const initialDepartments = [
   { id: 1, name: '信息中心', description: '负责系统开发与维护' },
   { id: 2, name: '视频制作部', description: '负责视频拍摄与制作' },
@@ -109,7 +70,7 @@ const initialDepartments = [
   { id: 5, name: '宣传运营部', description: '负责线上线下宣传与运营' }
 ];
 
-// 初始化任务数据
+// 初始任务数据
 const initialTasks = [
   {
     id: 1,
@@ -117,88 +78,70 @@ const initialTasks = [
     description: '制作时长3分钟的校运会宣传片，突出体育精神与青春活力',
     status: '进行中',
     isUrgent: true,
-    deadline: new Date('2023-10-25T18:00:00').toISOString(),
-    createdAt: new Date('2023-10-10T14:30:00').toISOString(),
-    startedAt: new Date('2023-10-11T09:00:00').toISOString(),
-    creator: 2, // 张主任
+    deadline: new Date(new Date().getTime() + 5 * 24 * 60 * 60 * 1000).toISOString(), // 5天后
+    creator: 2, // manager1
     creatorName: '张主任',
     department: 2, // 视频制作部
     departmentName: '视频制作部',
-    members: [3, 4], // 李明, 王红
-    attachments: [
-      { 
-        name: '校运会策划.docx', 
-        path: '/uploads/sample1.docx', 
-        size: 2621440 
-      },
-      { 
-        name: '往届视频参考.mp4', 
-        path: '/uploads/sample2.mp4', 
-        size: 26214400 
-      }
-    ]
-  },
-  {
-    id: 2,
-    title: '十月社团活动报道',
-    description: '对本月社团活动进行拍摄报道，制作图文与短视频',
-    status: '未开始',
-    isUrgent: false,
-    deadline: new Date('2023-10-30T18:00:00').toISOString(),
-    createdAt: new Date('2023-10-15T10:20:00').toISOString(),
-    creator: 1, // 系统管理员
-    creatorName: '系统管理员',
-    department: 3, // 新闻采编部
-    departmentName: '新闻采编部',
-    members: [5], // 赵强
-    attachments: [
-      { 
-        name: '社团活动安排表.xlsx', 
-        path: '/uploads/sample3.xlsx', 
-        size: 524288 
-      }
-    ]
+    members: [3], // user1
+    attachments: [],
+    createdAt: new Date().toISOString(),
+    startedAt: new Date().toISOString()
   }
 ];
 
-// 初始化通知数据
+// 初始通知数据
 const initialNotifications = [
   {
     id: 1,
-    content: '您有一个新任务：校运会宣传视频制作',
-    time: new Date('2023-10-10T14:30:00').toISOString(),
-    type: 'warning',
-    userId: 3 // 发给李明的
+    content: '欢迎使用易班工作站管理系统',
+    time: new Date().toISOString(),
+    type: 'info',
+    userId: null // 发给所有用户
   },
   {
     id: 2,
-    content: '您有一个新任务：校运会宣传视频制作',
-    time: new Date('2023-10-10T14:30:00').toISOString(),
+    content: '您有一个新任务: 校运会宣传视频制作',
+    time: new Date().toISOString(),
     type: 'warning',
-    userId: 4 // 发给王红的
-  },
-  {
-    id: 3,
-    content: '您有一个新任务：十月社团活动报道',
-    time: new Date('2023-10-15T10:20:00').toISOString(),
-    type: 'info',
-    userId: 5 // 发给赵强的
-  },
-  {
-    id: 4,
-    content: '系统维护通知：本周六凌晨2点-4点系统升级维护',
-    time: new Date('2023-10-18T09:00:00').toISOString(),
-    type: 'info',
-    userId: null // 发给所有人
+    userId: 3 // 发给user1
   }
 ];
 
-// 初始化数据
-console.log('开始初始化数据...');
+// 确保数据目录存在
+if (!fs.existsSync(DATA_DIR)) {
+  fs.mkdirSync(DATA_DIR, { recursive: true });
+}
 
-writeData(USERS_FILE, initialUsers);
-writeData(DEPARTMENTS_FILE, initialDepartments);
-writeData(TASKS_FILE, initialTasks);
-writeData(NOTIFICATIONS_FILE, initialNotifications);
+// 写入初始数据
+function writeData(filePath, data) {
+  try {
+    fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf8');
+    console.log(`数据已成功写入: ${filePath}`);
+  } catch (error) {
+    console.error(`写入文件失败: ${filePath}`, error);
+  }
+}
 
-console.log('数据初始化完成!');
+// 初始化函数
+function initData() {
+  // 检查文件是否存在，不存在则创建初始数据
+  if (!fs.existsSync(USERS_FILE)) {
+    writeData(USERS_FILE, initialUsers);
+  }
+  
+  if (!fs.existsSync(DEPARTMENTS_FILE)) {
+    writeData(DEPARTMENTS_FILE, initialDepartments);
+  }
+  
+  if (!fs.existsSync(TASKS_FILE)) {
+    writeData(TASKS_FILE, initialTasks);
+  }
+  
+  if (!fs.existsSync(NOTIFICATIONS_FILE)) {
+    writeData(NOTIFICATIONS_FILE, initialNotifications);
+  }
+}
+
+// 导出初始化函数
+module.exports = { initData };

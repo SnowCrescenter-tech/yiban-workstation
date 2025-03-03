@@ -1,0 +1,16 @@
+# 请下载一个图标文件并将其命名为favicon.ico放在项目根目录
+# 或者使用以下命令从在线生成器获取一个简单的图标:
+# 
+# curl -o favicon.ico https://www.google.com/favicon.ico
+#
+# 注意：这不是真正的代码，只是一个指示说明
+
+# 这个文件需要是一个真正的ico图标文件
+# 下面提供一个生成简单favicon.ico的命令行代码，在项目目录运行：
+
+# 如果你有Node.js环境，可以安装favicon模块并创建一个简单的图标
+# npm install -g favicon
+# favicon -i "YB" -b "#409eff" -f "Arial" -s 16 -o favicon.ico
+
+# 或者直接使用一个在线服务，如：
+# https://favicon.io/
